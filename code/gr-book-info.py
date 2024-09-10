@@ -1,6 +1,6 @@
 ## GOOD READS SCRAPING PRACTICE
 ## Scraping information on Gretchen Felker-Martin's book Manhunt (my favorite book that I have read in the past month, it is so good)
-## This book was review bombed by a bunch of TERF's, I am curious to see what the ratings look like without these
+## Practice web-scraping/ useing beautiful soup with python
 
 ## SOURCES:
 ## - https://github.com/maria-antoniak/goodreads-scraper
@@ -25,10 +25,10 @@ print(response.status_code)
 soup = BeautifulSoup(response.text,"html.parser")
 
 # TITLE
-soup.find('h1').text
+title = soup.find('h1').text
 
 # PUBLISHED DATE
-pages = soup.find(string=re.compile(r'First published')).text
+date = soup.find(string=re.compile(r'First published')).text
 
 # AUTHOR
 author = soup.find("span", attrs={"data-testid": "name"}).text
@@ -37,12 +37,21 @@ author = soup.find("span", attrs={"data-testid": "name"}).text
 pages = soup.find(string=re.compile(r'[0-9]+ pages')).text
 
 # GENRES
-
-genres = soup.find_all("ul", {'aria-label': 'Top genres for this book'})
+genres = soup.find_all("a", href=re.compile("genres"))
+genre_list = []
+for g in genres:
+    text = g.text
+    print(text)
+    if text == "Genres":
+        next
+    else:
+        genre_list.append(text)
 
 # # OF RATINGS
+number_of_ratings = soup.find("span", attrs={"data-testid": "ratingsCount"}).text.replace('\xa0ratings', '').rstrip()
 
 # # OF REVIEWS
+number_of_reviews = soup.find("span", attrs={"data-testid": "reviewsCount"}).text.replace('\xa0reviews', '').rstrip()
 
 # AVERAGE RATING
 average_rating = soup.find("div", class_= "RatingStatistics__rating").text
@@ -59,4 +68,16 @@ rating_dist_dict = {"1 star": rating_dist[4],
                     "4 stars": rating_dist[1],
                     "5 stars": rating_dist[0]}
 
-# LIST OF REVIEWS (get_reviews.py)
+# Outputting all above measures to a CSV
+book_info = {'Title': title,
+             'Author': author,
+             'Published Date': date,
+             'Page Numbers/Book Type': pages,
+             'Genres': ", ".join(genre_list),
+             'Number of Ratings': number_of_ratings,
+             'Number of Reviews': number_of_reviews,
+             'Average Rating': average_rating,
+             'Rating Distribution': ', '.join(key + ": " + str(val) for key, val in rating_dist_dict.items())}
+
+book_info_df = pd.DataFrame(book_info, index=[0])
+book_info_df.to_csv(file_path + "Manhunt.csv", index=False)
